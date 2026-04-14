@@ -3,7 +3,7 @@
 ## Proof.c
 
 I could not find "Demonstrate access to system" on loop.
-On inspection, the code appears to takea single integer as the argument, num_arg, and for each
+On inspection, the code appears to takes single integer as the argument, num_arg, and for each
 rank in the system, calculates *order of rank x num_arg* then sums it all up.
 
 E.g., with 4 ranks and num_arg = 3, it gives: *3x3 + 2x3 + 1x3 = 18*
@@ -17,7 +17,7 @@ The combined result is 18
 ```
 
 
-This confirms the funtion of the code and shows access to both mpicc and mpirun on cheeta.
+This confirms the function of the code and shows access to both mpicc and mpirun on cheeta.
 
 ## hello_world.c
 
@@ -27,4 +27,4 @@ After compiling with gcc, hello_world.c gave this output:
 totha4@cheetah:~/HPQC$ bin/hello_world
 Hello, World!
 ```
-confirming aceess to gcc.
+confirming access to gcc.
