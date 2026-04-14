@@ -1,5 +1,5 @@
 import sys
-import :time
+import time
 
 def main(): 
     output = 0
