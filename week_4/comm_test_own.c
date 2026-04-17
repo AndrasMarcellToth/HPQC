@@ -70,8 +70,18 @@ void client_task(int my_rank, int uni_size)
 	// creates the message
 	send_message = my_rank * 10;
 
+	// set up buffer and allocate memory
+    int buffer_size = sizeof(int) + MPI_BSEND_OVERHEAD;
+    void *buffer = malloc(buffer_size);
+
+	// hand buffer to mpi
+    MPI_Buffer_attach(buffer, buffer_size);
+
 	// sends the message using Ssend
-	MPI_Ssend(&send_message, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
+	MPI_Bsend(&send_message, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
+	
+	// free up buffer memory
+	MPI_Buffer_detach(&buffer, &buffer_size);
 
 	// prints the message from the sender
 	printf("Hello, I am %d of %d. Sent %d to Rank %d\n", my_rank, uni_size, send_message, dest);
