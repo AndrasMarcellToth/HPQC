@@ -70,12 +70,8 @@ void client_task(int my_rank, int uni_size)
 	// creates the message
 	send_message = my_rank * 10;
 
-	// set up request variable
-	MPI_Request request;
-	// sends the message using Rsend
+	// sends the message
 	MPI_Isend(&send_message, count, MPI_INT, dest, tag, MPI_COMM_WORLD, &request);
-	// wait for responce from root
-	MPI_Wait(&request, MPI_STATUS_IGNORE);
 
 	// prints the message from the sender
 	printf("Hello, I am %d of %d. Sent %d to Rank %d\n", my_rank, uni_size, send_message, dest);
