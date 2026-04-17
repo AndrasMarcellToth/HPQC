@@ -207,7 +207,7 @@ The sum_vector function was replaced with vector_magnitude_squared(). The new fu
 
 This simple change makes the calculation significantly more computationally challenging by introducing multiplication. It is also a more physically meaningful property of a vector, that might be of interest in a real application.
 
-With an input of 10000, the programme took ~0.003 seconds to execute. It should be noted that the result here may be wrong due to integer overflow; however, this should not affect performance benchmarking.
+With an input of 10000, the programme took ~0.003 seconds to execute.
 ```
 time ~/bin/magnitude_serial 10000
 Magnitude Squared: 32992300
