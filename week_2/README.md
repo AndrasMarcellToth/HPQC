@@ -33,7 +33,7 @@ user	0m0.000s
 sys	0m0.004s
 ```
 
-It can be seen above that the total runtime for the python version was 0.062s comapered to just 0.011s for the c version.
+It can be seen above that the total runtime for the python version was 0.032s compared to just 0.07s for the c version.
 
 ### C vs Python Repeat Adder
 
