@@ -45,7 +45,7 @@ The figure below shows the runtime of the python and c repeat adder multiplying 
 
 At 10e9 the c version returned a negative number, indicating an integer overflow.
 
-### Internal Timing
+## Internal Timing
 
 Below is the output from both time_print programmes with an argument of 10.
 
