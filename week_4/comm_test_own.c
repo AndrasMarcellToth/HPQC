@@ -3,6 +3,7 @@
 
 void root_task(int my_rank, int uni_size);
 void client_task(int my_rank, int uni_size);
+void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size);
 
 int main(int argc, char **argv) 
 {
@@ -14,11 +15,7 @@ int main(int argc, char **argv)
 	my_rank = uni_size = 0;
 
 	// intitalise MPI
-	ierror = MPI_Init(&argc, &argv);
-
-	// gets the rank and world size
-	ierror = MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
-	ierror = MPI_Comm_size(MPI_COMM_WORLD,&uni_size);
+	initialise_mpi(&argc, &argv, &my_rank, &uni_size);
 	
 	if (uni_size > 1) {
         if (0 == my_rank) {
@@ -79,4 +76,12 @@ void client_task(int my_rank, int uni_size)
 	// prints the message from the sender
 	printf("Hello, I am %d of %d. Sent %d to Rank %d\n", my_rank, uni_size, send_message, dest);
 
+}
+
+void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size)
+{
+    int ierror = 0;
+    ierror = MPI_Init(argc, argv);
+    ierror = MPI_Comm_rank(MPI_COMM_WORLD, my_rank);
+    ierror = MPI_Comm_size(MPI_COMM_WORLD, uni_size);
 }
