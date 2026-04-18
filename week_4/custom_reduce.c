@@ -8,6 +8,7 @@ void initialise_vector(int vector[], int start, int size);
 int vector_magnitude_squared(int vector[], int size);
 void root_task(int num_arg, int uni_size);
 void client_task(int my_rank, int num_arg, int uni_size);
+void custom_sum(voind *in, void *out, int *count, MPI_Datatype *datatype);
 
 int main(int argc, char **argv)
 {
@@ -171,3 +172,20 @@ int check_args(int argc, char **argv)
 	return num_arg;
 }
 
+void custom_sum(voind *in, void *out, int *count, MPI_Datatype *datatype)
+{
+
+    //convert in and out to integer arrays
+    int *in_ints = (int *)in;
+    int *out_ints = (int *)out;
+
+    // get the actual length of count, not just memory address
+    int length = *count;
+
+    // itterate over all elements
+    for (int i = 0; i < length; i++)
+    {
+        // add in value to out value for each element of the array
+        out_ints[i] = out_ints[i] + in_ints[i]
+    }
+}
