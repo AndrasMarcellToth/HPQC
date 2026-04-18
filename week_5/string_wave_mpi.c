@@ -3,21 +3,26 @@
 #include <math.h>
 #include <mpi.h>
 
-// declares the functions that will be called within main
-// note how declaration lines are similar to the initial line
-// of a function definition, but with a semicolon at the end;
-void check_args(int argc, char **argv, int *points, int *cycles, int *samples, char **path, int *time_steps, double *step_size);
+// functions used as-is from original file
 void initialise_vector(double vector[], int size, double initial);
 void print_vector(double vector[], int size);
 int sum_vector(int vector[], int size);
-void update_positions(double* positions, int points, double time);
 int generate_timestamps(double* time_stamps, int time_steps, double step_size);
 double driver(double time);
 void print_header(FILE** p_out_file, int points);
+
+// functions modified from original
+void update_positions_root(double* positions, int points, double time);
+void update_positions_client(double* positions, int points, double boundary);
+void check_args(int argc, char **argv, int *points, int *cycles, int *samples, char **path, int *time_steps, double *step_size);
+
+// new functions added
+void write_to_file(char *path, double *all_data, int time_steps, int points, int uni_size, int chunk, double *time_stamps);
 void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size);
+
+// added separate root and client tasks 
 void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps, double step_size, char *path);
 void client_task(int my_rank, int uni_size, int chunk, int time_steps, double step_size);
-void write_to_file(char *path, double *all_data, int time_steps, int points, int uni_size, int chunk, double *time_stamps);
 
 
 int main(int argc, char **argv)
@@ -40,13 +45,13 @@ int main(int argc, char **argv)
 	check_args(argc, argv, &points, &cycles, &samples, &path, &time_steps, &step_size);
 
 	// calculate chunk size and remainder
-    int chunk = num_arg / uni_size;
-    int remainder = num_arg % uni_size;
+    int chunk = points/ uni_size;
+    int remainder = points % uni_size;
 
 	if (0 == my_rank)
-        root_task(my_rank);
-    else
-        client_task(my_rank);
+    	root_task(my_rank, uni_size, points, chunk, time_steps, step_size, path);
+	else
+    	client_task(my_rank, uni_size, chunk, time_steps, step_size);
 
 	// finalise MPI
 	ierror = MPI_Finalize();
