@@ -49,15 +49,27 @@ void root_task(int my_rank, int num_pings)
 {	
 
 
+	// creates a vector variable for the current positions
+	double* positions = (double*) malloc(points * sizeof(double));
+	// and initialises every element to zero
+	initialise_vector(positions, points, 0.0);
+
+	// calculate chunk size and remainder
+    int chunk = num_arg / uni_size;
+    int remainder = num_arg % uni_size;
+
+
 	// creates a vector for the time stamps in the data
 	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
 	initialise_vector(time_stamps, time_steps, 0.0);
 	generate_timestamps(time_stamps, time_steps, step_size);
 
-	// creates a vector variable for the current positions
-	double* positions = (double*) malloc(points * sizeof(double));
-	// and initialises every element to zero
-	initialise_vector(positions, points, 0.0);
+	// allocate memory for local vector chunk
+    int *local_positions = malloc(chunk * sizeof(int));
+
+    // scatter to all processes
+    MPI_Scatter(positions, chunk, MPI_INT, local_positions chunk, MPI_INT, 0, MPI_COMM_WORLD);
+
 
 	// creates a file
 	FILE* out_file;
