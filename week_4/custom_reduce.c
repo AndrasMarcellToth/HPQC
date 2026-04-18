@@ -8,7 +8,7 @@ void initialise_vector(int vector[], int start, int size);
 int vector_magnitude_squared(int vector[], int size);
 void root_task(int num_arg, int uni_size);
 void client_task(int my_rank, int num_arg, int uni_size);
-void custom_sum(voind *in, void *out, int *count, MPI_Datatype *datatype);
+void custom_sum(void *in, void *out, int *count, MPI_Datatype *datatype);
 
 int main(int argc, char **argv)
 {
@@ -69,6 +69,10 @@ void root_task(int num_arg, int uni_size)
     // sum results
     local_sum = local_sum + remainder_sum;
 
+    // create custom sum operation
+    MPI_Op custom_op;
+    MPI_Op_create(&custom_sum, 1, &custom_op);
+
     // create and initialise receive variables
     int recv_message = 0;
     int count = 1;
@@ -76,8 +80,8 @@ void root_task(int num_arg, int uni_size)
 
     // crate sun variable
     int total_sum = 0;
-    // get results from all ranks
-    MPI_Reduce(&local_sum, &total_sum, count, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    // get results from all ranks with custom op
+    MPI_Reduce(&local_sum, &total_sum, count, MPI_INT, custom_op, 0, MPI_COMM_WORLD);
     
     // print final result
     printf("Magnitude Squared: %d\n", total_sum);
@@ -104,13 +108,17 @@ void client_task(int my_rank, int num_arg, int uni_size)
     // calculate local sum
     int local_sum = vector_magnitude_squared(local_vector, chunk);
 
+    // create custom sum operation
+    MPI_Op custom_op;
+    MPI_Op_create(&custom_sum, 1, &custom_op);
+
     // create and initialise transmission variables
     int count = 1;
     int dest = 0;
     MPI_Status status;
 
     // send result to root
-    MPI_Reduce(&local_sum, NULL, count, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&local_sum, NULL, count, MPI_INT, custom_op, 0, MPI_COMM_WORLD);
 
     // free up memory
     free(local_vector);
@@ -172,7 +180,7 @@ int check_args(int argc, char **argv)
 	return num_arg;
 }
 
-void custom_sum(voind *in, void *out, int *count, MPI_Datatype *datatype)
+void custom_sum(void *in, void *out, int *count, MPI_Datatype *datatype)
 {
 
     //convert in and out to integer arrays
@@ -186,6 +194,6 @@ void custom_sum(voind *in, void *out, int *count, MPI_Datatype *datatype)
     for (int i = 0; i < length; i++)
     {
         // add in value to out value for each element of the array
-        out_ints[i] = out_ints[i] + in_ints[i]
+        out_ints[i] = out_ints[i] + in_ints[i];
     }
 }
