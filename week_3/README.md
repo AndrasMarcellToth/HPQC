@@ -221,6 +221,9 @@ The trivial vector_serial.c took ~6.7 seconds with a vector of the same size.
 ### Parallel
 
 The first implementation of the mpi (magnitude_mpi_v1.c) calculated the vector once in the root process, then distributed 'chunks' of the vector to each client process. This implementation ran slower than the serial, taking ~0.752 seconds to complete.
+
+*NOTE: I realised after finishing this bit that at this stage we are not supposed to distribute chunks, but generate the vector in each process. I did this in the next iteration. However, since it was already written, I thought I'd leave it in.
+
 ```
 time mpirun -np 8 ~/bin/magnitude_mpi_v1 10000
 Magnitude Squared: 32992300
