@@ -59,10 +59,10 @@ void root_task(int my_rank, int num_pings)
     int remainder = num_arg % uni_size;
 
 	// allocate memory for local vector chunk
-    int *local_positions = malloc(chunk * sizeof(int));
+    double *local_positions = malloc(chunk * sizeof(double));
 
     // scatter to all processes
-    MPI_Scatter(positions, chunk, MPI_INT, local_positions chunk, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(positions, chunk, MPI_DOUBLE, local_positions, chunk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 	// creates a vector for the time stamps in the data
 	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
@@ -74,7 +74,7 @@ void root_task(int my_rank, int num_pings)
 	for (int i = 0; i < time_steps; i++)
 	{
 		// updates the position using a function
-		update_positions(local_positions, chunk, time_stamps[i]);
+		update_positions_root(local_positions, chunk, time_stamps[i]);
 		// add new postiotns to array of some kind
 
 		// send final position to next rank
@@ -111,19 +111,23 @@ void client_task(int my_rank, int num_pings)
 	initialise_vector(time_stamps, time_steps, 0.0);
 	generate_timestamps(time_stamps, time_steps, step_size);
 
+	// initialise boudary
+	dounbe boundary = 0.0;
 
 	// iterates through each time step in the collection
 	for (int i = 0; i < time_steps; i++)
 	{
 		
 		// recive strating position from previous rank
+		MPI_Recv(&boundary, 1, MPI_DOUBLE, my_rank-1, 0, MPI_COMM_WORLD);
 
 		// updates the position using a function
 		// need to change driver function
-		update_positions(local_positions, chunk, time_stamps[i]);
+		update_positions_client(local_positions, chunk, boundary);
 		// add new postiotns to array of some kind
 
-		// send last position to next rank
+		// send last element to next rank
+		MPI_Send(local_positions[-1], 1, MPI_DOUBLE, my_rank+1, 0, MPI_COMM_WORLD);
 
 	}
 
@@ -156,11 +160,11 @@ double driver(double time)
 	return(value);
 }
 
-// defines a function to update the positions
-void update_positions(double* positions, int points, double time)
+// defines a function to update the positions used for root only
+void update_positions_root(double* positions, int points, double time)
 {
 	// creates a temporary vector variable for the new positions
-        double* new_positions = (double*) malloc(points * sizeof(double));
+    double* new_positions = (double*) malloc(points * sizeof(double));
 
 	// initialises the index
 	int i = 0;
@@ -179,6 +183,34 @@ void update_positions(double* positions, int points, double time)
 	// frees the temporary vector
 	free(new_positions);
 }
+
+// updates positions for client ranks. Does not include driver, but uses previous rank as starting point
+void update_positions_client(double* positions, int points, double boundary)
+{
+    // creates a temporary vector variable for the new positions
+    double* new_positions = (double*) malloc(points * sizeof(double));
+
+	// initialises the index
+	int i = 0;
+    // first element set from previous rank boundary
+    new_positions[i] = boundary;
+
+    // creates new positions by setting value of previous element
+    for (i = 1; i < points; i++)
+    {
+        new_positions[i] = positions[i-1];
+    }
+
+    // propagates these new positions to the old ones
+    for (int i = 0; i < points; i++)
+    {
+        positions[i] = new_positions[i];
+    }
+
+    // frees the temporary vector
+    free(new_positions);
+}
+
 
 // defines a set of timestamps
 int generate_timestamps(double* timestamps, int time_steps, double step_size)
