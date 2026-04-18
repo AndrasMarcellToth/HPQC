@@ -160,7 +160,7 @@ mpirun -np 2 ~/bin/ping_pong 100
 ```
 The plot below shows the runtime against the number of ping-pong cycles. It can be seen that time increases approximately linearly with the number of massage cycles.
 
-![ping-pong plot](figs/ping-pong.png)
+/home/andris/data/animate_string_file.gif
 
 ### Ping-pong Bandwidth
 
