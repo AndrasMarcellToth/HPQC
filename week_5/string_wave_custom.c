@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 
 	// creates a file
 	FILE* out_file;
-     	out_file = fopen("data/string_wave.csv","w");
+     	out_file = fopen(path,"w");
 	print_header(&out_file, points);
 
 	// iterates through each time step in the collection
