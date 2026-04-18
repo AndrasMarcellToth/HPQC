@@ -66,15 +66,13 @@ void root_task(int my_rank, int num_pings)
 
     while(current_pings < num_pings) {
 
-        printf("Root with current count %d out of %d", current_pings, num_pings);
+        printf("Root with current count %d out of %d\n", current_pings, num_pings);
         // send the currrent ping count
         MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
 
         // recive ping count from client
         MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
 
-        // increment ping count
-        current_pings++;
     }
 
     // stop timing
@@ -95,19 +93,19 @@ void client_task(int my_rank, int num_pings)
     tag = dest = source = count = current_pings = 0;
     count = 1;
     MPI_Status status;
-    // recive ping count from client
-    MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
 
-    printf("Client with current count %d out of %d", current_pings, num_pings);
+    while (current_pings < num_pings) {
+        // recive ping count from client
+        MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
 
-    // increment ping count
-    current_pings++;
+        // increment ping count
+        current_pings++;
 
-    // send the currrent ping count
-    MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
+        printf("Client with current count %d out of %d\n", current_pings, num_pings);
 
-
-
+        // send the currrent ping count
+        MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
+    }
 }
 
 void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size)
