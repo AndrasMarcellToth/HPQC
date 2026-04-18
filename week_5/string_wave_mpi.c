@@ -15,6 +15,10 @@ int generate_timestamps(double* time_stamps, int time_steps, double step_size);
 double driver(double time);
 void print_header(FILE** p_out_file, int points);
 void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size);
+void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps, double step_size, char *path);
+void client_task(int my_rank, int uni_size, int chunk, int time_steps, double step_size);
+void write_to_file(char *path, double *all_data, int time_steps, int points, int uni_size, int chunk, double *time_stamps);
+
 
 int main(int argc, char **argv)
 {	
@@ -35,6 +39,10 @@ int main(int argc, char **argv)
 	// chack umber of arguments and calculate parameters
 	check_args(argc, argv, &points, &cycles, &samples, &path, &time_steps, &step_size);
 
+	// calculate chunk size and remainder
+    int chunk = num_arg / uni_size;
+    int remainder = num_arg % uni_size;
+
 	if (0 == my_rank)
         root_task(my_rank);
     else
@@ -53,10 +61,6 @@ void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps,
 	double* positions = (double*) malloc(points * sizeof(double));
 	// and initialises every element to zero
 	initialise_vector(positions, points, 0.0);
-
-	// calculate chunk size and remainder
-    int chunk = num_arg / uni_size;
-    int remainder = num_arg % uni_size;
 
 	// allocate memory for local vector chunk
     double *local_positions = malloc(chunk * sizeof(double));
@@ -105,22 +109,24 @@ void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps,
 	// gather data from all ranks
 	MPI_Gather(all_local_data, count, MPI_DOUBLE, all_data, count, MPI_DOUBLE, dest, MPI_COMM_WORLD);
 
+	// the data at this point is in a flattened 2D array. [rank0 time0, rank0 time1, ... rank1 time0, ...]
+	// with each element (e.g. rank0 time0) containing every point in the chunk of the rank at the given time.
 
+	// write out to file
+	write_to_file(path, all_data, time_steps, points, uni_size, chunk, time_stamps);
 
 	// if we use malloc, must free when done!
 	free(time_stamps);
 	free(positions);
 	free(local_positions);
 	free(all_local_data);
+	free(all_data);
 
 
 }
 
 void client_task(int my_rank, int uni_size, int chunk, int time_steps, double step_size)
 {
-	// calculate chunk size and remainder
-    int chunk = num_arg / uni_size;
-    int remainder = num_arg % uni_size;
 
 	// allocate memory for local vector chunk
     double *local_positions = malloc(chunk * sizeof(double));
@@ -169,7 +175,6 @@ void client_task(int my_rank, int uni_size, int chunk, int time_steps, double st
 			MPI_Send(&local_positions[chunk-1], 1, MPI_DOUBLE, my_rank+1, 0, MPI_COMM_WORLD);
 		}
 		
-
 	}
 
 
@@ -177,13 +182,11 @@ void client_task(int my_rank, int uni_size, int chunk, int time_steps, double st
 	int count = time_steps * chunk;
 	int dest = 0;
 	// gather data from all ranks
-	MPI_Gather(all_local_data, count, MPI_DOUBLE, all_data, count, MPI_DOUBLE, dest, MPI_COMM_WORLD);
-
-
+	MPI_Gather(all_local_data, count, MPI_DOUBLE, NULL, count, MPI_DOUBLE, dest, MPI_COMM_WORLD);
 
 	// if we use malloc, must free when done!
 	free(time_stamps);
-	free(local_positions)
+	free(local_positions);
 	free(all_local_data);
 }
 
@@ -256,7 +259,6 @@ void update_positions_client(double* positions, int points, double boundary)
     // frees the temporary vector
     free(new_positions);
 }
-
 
 // defines a set of timestamps
 int generate_timestamps(double* timestamps, int time_steps, double step_size)
@@ -335,10 +337,45 @@ void check_args(int argc, char **argv, int *points, int *cycles, int *samples, c
 	}
 }
 
+// initializes mpi settings
 void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size)
 {
     int ierror = 0;
     ierror = MPI_Init(argc, argv);
     ierror = MPI_Comm_rank(MPI_COMM_WORLD, my_rank);
     ierror = MPI_Comm_size(MPI_COMM_WORLD, uni_size);
+}
+
+// function ot write tou data to file
+void write_to_file(char *path, double *all_data, int time_steps, int points, int uni_size, int chunk, double *time_stamps)
+{
+    // creates a file
+    FILE *out_file;
+		out_file = fopen(path, "w");
+    print_header(&out_file, points);
+
+    // iterates through each time step in the collection
+    for (int i = 0; i < time_steps; i++)
+    {
+        // print index and timestamp
+        fprintf(out_file, "%d, %lf", i, time_stamps[i]);
+
+        // itterates over each rank
+        for (int rank = 0; rank < uni_size; rank++) {
+
+            // iterates over all of the points on the line
+            for (int j = 0; j < chunk; j++) {
+
+				// prints each y-position to a file
+				// [rank * time_steps * chunk] -> the steaps to the start of each ranks data
+				// [i * chunk] -> the steps to the start of each time step in the data of the rank
+                fprintf(out_file, ", %lf", all_data[rank * time_steps * chunk + i * chunk + j]);
+            }
+        }
+        // prints a new line
+        fprintf(out_file, "\n");
+    }
+
+    // close file
+    fclose(out_file);
 }
