@@ -297,3 +297,43 @@ Similarly, MPI_Gather() was replaced by MPI_Reduce in the client task. With redu
 ### Custom Reduce Operation
 
 For this task, a copy of gather_reduce_test.c was made, custom_reduce.c.
+
+The following custom array summing function was implemented:
+```
+void custom_sum(voind *in, void *out, int *count, MPI_Datatype *datatype)
+{
+
+    //convert in and out to integer arrays
+    int *in_ints = (int *)in;
+    int *out_ints = (int *)out;
+
+    // get the actual length of count, not just memory address
+    int length = *count;
+
+    // itterate over all elements
+    for (int i = 0; i < length; i++)
+    {
+        // add in value to out value for each element of the array
+        out_ints[i] = out_ints[i] + in_ints[i]
+    }
+}
+```
+
+Below is the output from the custom sum implementation and the MPI_SUM implementation:
+```
+time mpirun -np 8 ~/bin/custom_reduce 10000
+Magnitude Squared: 32992300
+
+real	0m0.719s
+user	0m0.315s
+sys	0m0.823s
+
+time mpirun -np 8 ~/bin/gather_reduce_test 10000
+Magnitude Squared: 32992300
+
+real	0m0.721s
+user	0m0.327s
+sys	0m0.848s
+
+```
+It can be seen that the two versions run in near identical time, and the resulting sums agree.
