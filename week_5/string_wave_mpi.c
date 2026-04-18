@@ -14,9 +14,20 @@ void update_positions(double* positions, int points, double time);
 int generate_timestamps(double* time_stamps, int time_steps, double step_size);
 double driver(double time);
 void print_header(FILE** p_out_file, int points);
+void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size);
 
 int main(int argc, char **argv)
-{
+{	
+	// declare and initialise error handling variable
+	int ierror = 0;
+	
+	// declare and initialise rank and size varibles
+	int my_rank, uni_size;
+	my_rank = uni_size = 0;
+
+	// intitalise MPI
+	initialise_mpi(&argc, &argv, &my_rank, &uni_size);
+
 	// declare and initialise the numerical argument variable
 	int points, cycles, samples, time_steps;
 	char *path;
@@ -24,7 +35,20 @@ int main(int argc, char **argv)
 	// chack umber of arguments and calculate parameters
 	check_args(argc, argv, &points, &cycles, &samples, &path, &time_steps, &step_size);
 
-	
+	if (0 == my_rank)
+        root_task(my_rank);
+    else
+        client_task(my_rank);
+
+	// finalise MPI
+	ierror = MPI_Finalize();
+	return 0;
+}
+
+void root_task(int my_rank, int num_pings)
+{	
+
+
 	// creates a vector for the time stamps in the data
 	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
 	initialise_vector(time_stamps, time_steps, 0.0);
@@ -66,7 +90,65 @@ int main(int argc, char **argv)
 	// closes the file
 	fclose(out_file);
 
-	return 0;
+	// creates and initialies transmission variables
+    int tag, dest, source, count, current_pings;
+    tag = current_pings = 0;
+    dest = count = source = 1;
+    MPI_Status status;
+
+    // set up timing variables
+    struct timespec start_time, end_time, time_diff;
+    double elapsed_time, avg_time;
+    elapsed_time = avg_time = 0.0;
+
+    //start timing
+    timespec_get(&start_time, TIME_UTC);
+
+    while(current_pings < num_pings) {
+
+        // print for debug
+        // printf("Root with current count %d out of %d\n", current_pings, num_pings);
+
+        // send the currrent ping count
+        MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
+
+        // recive ping count from client
+        MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
+
+    }
+
+    // stop timing
+	timespec_get(&end_time, TIME_UTC);
+	// calculate runtime
+	time_diff = calculate_runtime(start_time, end_time);
+	elapsed_time = to_second_float(time_diff);
+
+	// prints the message from the sender
+	printf("Took %lf seconds for %d ping-pongs\n", elapsed_time, num_pings);
+
+}
+
+void client_task(int my_rank, int num_pings)
+{
+	// creates and initialies transmission variables
+    int tag, dest, source, count, current_pings;
+    tag = dest = source = count = current_pings = 0;
+    count = 1;
+    MPI_Status status;
+
+    while (current_pings < num_pings) {
+        // recive ping count from client
+        MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
+
+        // increment ping count
+        current_pings++;
+
+        // print for debug
+        // printf("Client with current count %d out of %d\n", current_pings, num_pings);
+
+        // send the currrent ping count
+        MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
+    }
 }
 
 // prints a header to the file
@@ -189,3 +271,10 @@ void check_args(int argc, char **argv, int *points, int *cycles, int *samples, c
 	}
 }
 
+void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size)
+{
+    int ierror = 0;
+    ierror = MPI_Init(argc, argv);
+    ierror = MPI_Comm_rank(MPI_COMM_WORLD, my_rank);
+    ierror = MPI_Comm_size(MPI_COMM_WORLD, uni_size);
+}
