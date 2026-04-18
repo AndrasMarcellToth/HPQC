@@ -66,20 +66,23 @@ void root_task(int num_arg, int uni_size)
     int remainder_sum = vector_magnitude_squared(vector + (num_arg- remainder), remainder);
 
     // sum results
-    int total_sum = local_sum;
+    int total_sum = local_sum + remainder_sum;
 
     // create and initialise receive variables
     int recv_message = 0;
     int count = 1;
     MPI_Status status;
 
-    // add result from each chunk
-    for (int p = 1; p < uni_size; p++)
-    {
-        MPI_Recv(&recv_message, count, MPI_INT, p, 0, MPI_COMM_WORLD, &status);
-        total_sum += recv_message;
-    }
+    // allocate memory to all results
+    int *all_results = malloc(uni_size * sizeof(int));
+    // gather from all ranks
+    MPI_Gather(&local_sum, count, MPI_INT, all_results, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+    // sum resulst
+    int total_sum = 0;
+    for (int rank = 0; rank < uni_size; rank++)
+        total_sum += all_sums[rank];
+    
     // print final result
     printf("Magnitude Squared: %d\n", total_sum);
 	// free up memory
@@ -111,7 +114,7 @@ void client_task(int my_rank, int num_arg, int uni_size)
     MPI_Status status;
 
     // send result to root
-    MPI_Send(&local_sum, count, MPI_INT, dest, 0, MPI_COMM_WORLD);
+    MPI_Gather(&local_sum, count, MPI_INT, NULL, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     // free up memory
     free(local_vector);
