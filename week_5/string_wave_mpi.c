@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-void root_task(int my_rank, int num_pings)
+void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps, double step_size, char *path)
 {	
 
 
@@ -96,19 +96,27 @@ void root_task(int my_rank, int num_pings)
 	}
 
 
-	// gather and print logic here
+	// allocate memory for all data from all ranks
+	double *all_data = malloc(time_steps * points * sizeof(double));
+
+	// declare transmission variable
+	int count = time_steps * chunk;
+	int dest = 0;
+	// gather data from all ranks
+	MPI_Gather(all_local_data, count, MPI_DOUBLE, all_data, count, MPI_DOUBLE, dest, MPI_COMM_WORLD);
 
 
 
 	// if we use malloc, must free when done!
 	free(time_stamps);
 	free(positions);
-	free(local_positions)
+	free(local_positions);
+	free(all_local_data);
 
 
 }
 
-void client_task(int my_rank, int num_pings)
+void client_task(int my_rank, int uni_size, int chunk, int time_steps, double step_size)
 {
 	// calculate chunk size and remainder
     int chunk = num_arg / uni_size;
@@ -132,9 +140,12 @@ void client_task(int my_rank, int num_pings)
 	// allocate memory for all the local data
 	double *all_local_data = malloc(time_steps * chunk * sizeof(double));
 	// add the current position of the points to the full local data set
-		for (int j = 0; j < chunk; j++) {
-			all_local_data[j] = local_positions[j];
-		}
+	for (int j = 0; j < chunk; j++) {
+		all_local_data[j] = local_positions[j];
+	}
+	
+	// declare transmission variables
+	MPI_Status status; 
 
 	// iterates through each time step in the collection
 	for (int i = 1; i < time_steps; i++)
@@ -162,13 +173,18 @@ void client_task(int my_rank, int num_pings)
 	}
 
 
-	// send back to root with gather
+	// declare transmission variable
+	int count = time_steps * chunk;
+	int dest = 0;
+	// gather data from all ranks
+	MPI_Gather(all_local_data, count, MPI_DOUBLE, all_data, count, MPI_DOUBLE, dest, MPI_COMM_WORLD);
 
 
 
 	// if we use malloc, must free when done!
 	free(time_stamps);
 	free(local_positions)
+	free(all_local_data);
 }
 
 // prints a header to the file
