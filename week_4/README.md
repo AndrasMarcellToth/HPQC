@@ -131,3 +131,34 @@ Hello, I am 1 of 6. Sent 10 to Rank 0
 #### Comparison
 
 All four versions of send were found to function the same in this application. As such, for a simple programme like this, regular Send() is likely the simplest and most reliable choice.
+
+### Implementing Timing
+
+Timing was implemented by using timing functions defined in code from week 2. Both send and receive functions were timed. The results are shown below with 6 processors.
+```
+mpirun -np 6 ~/bin/comm_test_own
+Rank 5 took 0.000009 seconds to send
+Rank 1 took 0.000011 seconds to send
+Rank 2 took 0.000013 seconds to send
+Rank 3 took 0.000009 seconds to send
+Rank 4 took 0.000013 seconds to send
+Rank 0 took 0.000080 seconds to read from 1
+Rank 0 took 0.000003 seconds to read from 2
+Rank 0 took 0.000002 seconds to read from 3
+Rank 0 took 0.000002 seconds to read from 4
+Rank 0 took 0.000002 seconds to read from 5
+```
+The runtime for the message sending is tiny, on the order of 1e-5, 1e-6 seconds with some seemingly random variation. However, receive generally appears to be faster.
+
+## Part 2: Benchmarking Latency and Bandwidth
+
+### Ping-pong Message Latency
+
+The ping-pong logic was implemented in ping_pong.c. The programme requires exactly 2 ranks (a ping and a pong) and exactly 1 integer argument that sets how many ping-pong cycles to run, e.g.:
+```
+mpirun -np 2 ~/bin/ping_pong 100
+```
+The plot below shows the runtime against the number of ping-pong cycles. It can be seen that time increases approximately linearly with the number of massage cycles.
+
+![ping-pong plot](figs/ping-pong.png)
+
