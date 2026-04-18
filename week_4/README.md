@@ -179,3 +179,121 @@ The plots below show the time for a 10 and 1000 ping-pongs with data sizes from 
 It can be seen that in both figures, the runtime is approximately constant up to 1024 bytes, then rises linearly. This suggests that for small data sizes, the runtime is limited by the message passing overhead, rather than the true bandwidth.
 
 A linear fit was done on the above 1024 bytes section of the 1000 ping pong figure. The fit yielded a y-intecept of 0.44 +/- 0.03 milliseconds and a slope of (2.90 +/- 0.04)e-9 seconds per byte. This suggests a latency of about 0.4-0.5 milliseconds and a bandwidth of about 3.45 MB/s.
+
+## Part 3: Collective Communications
+
+A copy of magnitude_mpi_v2.c from week 3 was made here and named collective_comm_test.c. Modification to the code can be traced though the commit history.
+
+### Broadcast, Scatter, DIY
+
+The original version of the code used a DIY approach, where each rank calculated its own chunk of the vector.
+
+As the vector generation is relatively trivial, and the processes can do it in parallel, broadcast or scatter may slow down the execution, as they add additional messaging overhead.
+
+With no modifications, the code took 0.705 seconds or real time to execute with an input of 10000.
+
+To implement broadcasting, the following sections were added to the root and client tasks:
+```
+void root_task(int num_arg, int uni_size)
+{
+    ...
+
+    // creates full vector
+    int *vector = malloc(num_arg * sizeof(int));
+	// assignes values to vetor
+    initialise_vector(vector, 0, num_rag);
+    // broadcasts to all processes
+    MPI_Bcast(vector, num_arg, MPI_INT, 0, MPI_COMM_WORLD);
+
+    ...
+}
+
+void client_task(int my_rank, int num_arg, int uni_size)
+{
+    ...
+
+    // allocate memory for full vector
+    int *vector = malloc(num_arg * sizeof(int));
+    // receive broadcast from root
+    MPI_Bcast(vector, num_arg, MPI_INT, 0, MPI_COMM_WORLD);
+
+    ...
+}
+
+```
+With these changes, the code took 0.730 seconds of real time to execute with an input of 10000.
+
+For scatter, the following changes were made to the root process:
+```
+void root_task(int num_arg, int uni_size)
+{
+    ...
+    
+    // allocate memory for local vector chunk
+    int *local_vector = malloc(chunk * sizeof(int));
+
+    // scatter to all processes
+    MPI_Scatter(vector, chunk, MPI_INT, local_vector, chunk, MPI_INT, 0, MPI_COMM_WORLD);
+
+
+	// calculates local sum
+    int local_sum = vector_magnitude_squared(local_vector, chunk);
+    
+    // root now needs to hadle remainder as well os needs to sum the end of the vector
+    int remainder_sum = vector_magnitude_squared(vector + (num_arg- remainder), remainder);
+
+    ...
+}
+
+```
+Note that the remainder handling had to be moved from the last process to root, as scatter only works with equal chunk size.
+
+With scatter, the runtime was 0.715 seconds of real time with an input of 10000
+
+### Gather, Reduce
+
+To implement gather and reduce, a copy of collective_comm_set.c was made, gather_reduce_test.c.
+
+For implementing gather, the following changes were made to the root and client tasks:
+```
+oid root_task(int num_arg, int uni_size)
+{
+    ...
+
+    // allocate memory to all results
+    int *all_results = malloc(uni_size * sizeof(int));
+    // gather from all ranks
+    MPI_Gather(&local_sum, count, MPI_INT, all_results, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // sum resulst
+    int total_sum = 0;
+    for (int rank = 0; rank < uni_size; rank++)
+    total_sum += all_sums[rank];
+
+    ...
+}
+
+void client_task(int my_rank, int num_arg, int uni_size)
+{
+    ...
+
+    // send result to root
+    MPI_Gather(&local_sum, count, MPI_INT, NULL, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    ...
+}
+```
+With the implementation of gather, the runtime was 0.755 seconds of real time with an input of 10000. This is slightly slower than the send/receive version.
+
+To implement reduce, the summing loop in root task was simple replaced by:
+```
+// crate sun variable
+    int total_sum = 0;
+    // get results from all ranks
+    MPI_Reduce(&local_sum, &total_sum, count, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+```
+Similarly, MPI_Gather() was replaced by MPI_Reduce in the client task. With reduce, the programme executed in 0.742 seconds of real time with an input of 10000.
+
+### Custom Reduce Operation
+
+For this task, a copy of gather_reduce_test.c was made, custom_reduce.c.
