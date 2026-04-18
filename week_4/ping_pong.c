@@ -52,8 +52,8 @@ void root_task(int my_rank, int num_pings)
 {
 	// creates and initialies transmission variables
     int tag, dest, source, count, current_pings;
-    tag = source = count, current_pings = 0;
-    dest, count = 1;
+    tag = current_pings = 0;
+    dest = count = source = 1;
     MPI_Status status;
 
     // set up timing variables
@@ -92,8 +92,8 @@ void client_task(int my_rank, int num_pings)
 {
 	// creates and initialies transmission variables
     int tag, dest, source, count, current_pings;
-    tag = source = count, current_pings = 0;
-    dest, count = 1;
+    tag = dest = source = count = current_pings = 0;
+    count = 1;
     MPI_Status status;
     // recive ping count from client
     MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
