@@ -58,109 +58,83 @@ void root_task(int my_rank, int num_pings)
     int chunk = num_arg / uni_size;
     int remainder = num_arg % uni_size;
 
-
-	// creates a vector for the time stamps in the data
-	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
-	initialise_vector(time_stamps, time_steps, 0.0);
-	generate_timestamps(time_stamps, time_steps, step_size);
-
 	// allocate memory for local vector chunk
     int *local_positions = malloc(chunk * sizeof(int));
 
     // scatter to all processes
     MPI_Scatter(positions, chunk, MPI_INT, local_positions chunk, MPI_INT, 0, MPI_COMM_WORLD);
 
+	// creates a vector for the time stamps in the data
+	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
+	initialise_vector(time_stamps, time_steps, 0.0);
+	generate_timestamps(time_stamps, time_steps, step_size);
 
-	// creates a file
-	FILE* out_file;
-     	out_file = fopen(path,"w");
-	print_header(&out_file, points);
 
 	// iterates through each time step in the collection
 	for (int i = 0; i < time_steps; i++)
 	{
 		// updates the position using a function
-		update_positions(positions, points, time_stamps[i]);
+		update_positions(local_positions, chunk, time_stamps[i]);
+		// add new postiotns to array of some kind
 
-		// prints an index and time stamp
-		fprintf(out_file, "%d, %lf", i, time_stamps[i]);
+		// send final position to next rank
 
-		// iterates over all of the points on the line
-		for (int j = 0; j < points; j++)
-		{
-			// prints each y-position to a file
-			fprintf(out_file, ", %lf", positions[j]);
-		}
-		// prints a new line
-		fprintf(out_file, "\n");
 	}
+
+
+	// gather and print logic here
+
+
 
 	// if we use malloc, must free when done!
 	free(time_stamps);
 	free(positions);
+	free(local_positions)
 
-	// closes the file
-	fclose(out_file);
-
-	// creates and initialies transmission variables
-    int tag, dest, source, count, current_pings;
-    tag = current_pings = 0;
-    dest = count = source = 1;
-    MPI_Status status;
-
-    // set up timing variables
-    struct timespec start_time, end_time, time_diff;
-    double elapsed_time, avg_time;
-    elapsed_time = avg_time = 0.0;
-
-    //start timing
-    timespec_get(&start_time, TIME_UTC);
-
-    while(current_pings < num_pings) {
-
-        // print for debug
-        // printf("Root with current count %d out of %d\n", current_pings, num_pings);
-
-        // send the currrent ping count
-        MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
-
-        // recive ping count from client
-        MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
-
-    }
-
-    // stop timing
-	timespec_get(&end_time, TIME_UTC);
-	// calculate runtime
-	time_diff = calculate_runtime(start_time, end_time);
-	elapsed_time = to_second_float(time_diff);
-
-	// prints the message from the sender
-	printf("Took %lf seconds for %d ping-pongs\n", elapsed_time, num_pings);
 
 }
 
 void client_task(int my_rank, int num_pings)
 {
-	// creates and initialies transmission variables
-    int tag, dest, source, count, current_pings;
-    tag = dest = source = count = current_pings = 0;
-    count = 1;
-    MPI_Status status;
+	// calculate chunk size and remainder
+    int chunk = num_arg / uni_size;
+    int remainder = num_arg % uni_size;
 
-    while (current_pings < num_pings) {
-        // recive ping count from client
-        MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
+	// allocate memory for local vector chunk
+    int *local_positions = malloc(chunk * sizeof(int));
 
-        // increment ping count
-        current_pings++;
+    // receive scattered chunks
+    MPI_Scatter(NULL, chunk, MPI_INT, local_positions, chunk, MPI_INT, 0, MPI_COMM_WORLD);
 
-        // print for debug
-        // printf("Client with current count %d out of %d\n", current_pings, num_pings);
+	// creates a vector for the time stamps in the data
+	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
+	initialise_vector(time_stamps, time_steps, 0.0);
+	generate_timestamps(time_stamps, time_steps, step_size);
 
-        // send the currrent ping count
-        MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
-    }
+
+	// iterates through each time step in the collection
+	for (int i = 0; i < time_steps; i++)
+	{
+		
+		// recive strating position from previous rank
+
+		// updates the position using a function
+		// need to change driver function
+		update_positions(local_positions, chunk, time_stamps[i]);
+		// add new postiotns to array of some kind
+
+		// send last position to next rank
+
+	}
+
+
+	// send back to root with gather
+
+
+
+	// if we use malloc, must free when done!
+	free(time_stamps);
+	free(local_positions)
 }
 
 // prints a header to the file
