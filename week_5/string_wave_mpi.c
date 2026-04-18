@@ -69,10 +69,18 @@ void root_task(int my_rank, int num_pings)
 	initialise_vector(time_stamps, time_steps, 0.0);
 	generate_timestamps(time_stamps, time_steps, step_size);
 
+	// allocate memory for all the local data
+	double *all_local_data = malloc(time_steps * chunk * sizeof(double));
 
 	// iterates through each time step in the collection
 	for (int i = 0; i < time_steps; i++)
-	{
+	{	
+
+		// add the current position of the points to the full local data set
+		for (int j = 0; j < chunk; j++) {
+			all_local_data[i * chunk + j] = local_positions[j];
+		}
+		
 		// updates the position using a function
 		update_positions_root(local_positions, chunk, time_stamps[i]);
 		// add new postiotns to array of some kind
@@ -104,6 +112,7 @@ void client_task(int my_rank, int num_pings)
 	// allocate memory for local vector chunk
     double *local_positions = malloc(chunk * sizeof(double));
 
+
     // receive scattered chunks
     MPI_Scatter(NULL, chunk, MPI_DOUBLE, local_positions, chunk, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -115,10 +124,18 @@ void client_task(int my_rank, int num_pings)
 	// initialise boudary
 	dounbe boundary = 0.0;
 
+	// allocate memory for all the local data
+	double *all_local_data = malloc(time_steps * chunk * sizeof(double));
+
 	// iterates through each time step in the collection
 	for (int i = 0; i < time_steps; i++)
 	{
 		
+		// add the current position of the points to the full local data set
+		for (int j = 0; j < chunk; j++) {
+			all_local_data[i * chunk + j] = local_positions[j];
+		}
+   			
 		// recive strating position from previous rank
 		MPI_Recv(&boundary, 1, MPI_DOUBLE, my_rank-1, 0, MPI_COMM_WORLD, &status);
 
