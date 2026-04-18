@@ -51,13 +51,19 @@ void root_task(int num_arg, int uni_size)
     int *vector = malloc(num_arg * sizeof(int));
 	// assignes values to vetor
     initialise_vector(vector, 0, num_arg);
-    // broadcasts to all processes
-    MPI_Bcast(vector, num_arg, MPI_INT, 0, MPI_COMM_WORLD);
+    
+    // allocate memory for local vector chunk
+    int *local_vector = malloc(chunk * sizeof(int));
+
+    // scatter to all processes
+    MPI_Scatter(vector, chunk, MPI_INT, local_vector, chunk, MPI_INT, 0, MPI_COMM_WORLD);
 
 
 	// calculates local sum
-    int local_sum = vector_magnitude_squared(vector, chunk);
+    int local_sum = vector_magnitude_squared(local_vector, chunk);
     
+    // root now needs to hadle remainder as well os needs to sum the end of the vector
+    int remainder_sum = vector_magnitude_squared(vector + (num_arg- remainder), remainder);
 
     // sum results
     int total_sum = local_sum;
@@ -78,6 +84,7 @@ void root_task(int num_arg, int uni_size)
     printf("Magnitude Squared: %d\n", total_sum);
 	// free up memory
 	free(vector);
+    free(local_vector);
 }
 
 // The function executed by the cliet processes
@@ -88,23 +95,15 @@ void client_task(int my_rank, int num_arg, int uni_size)
     int chunk = num_arg / uni_size;
     int remainder = num_arg % uni_size;
 
-    // allocate memory for full vector
-    int *vector = malloc(num_arg * sizeof(int));
-    // receive broadcast from root
-    MPI_Bcast(vector, num_arg, MPI_INT, 0, MPI_COMM_WORLD);
+    // allocate memory for local vector
+    int *local_vector = malloc(chunk * sizeof(int));
+    // receive scattered chunks
+    MPI_Scatter(NULL, chunk, MPI_INT, local_vector, chunk, MPI_INT, 0, MPI_COMM_WORLD);
 
-    // add remainder to last process
-    int local_size = chunk;
-    if (my_rank == uni_size - 1) {
-        local_size += remainder;
-    }
-
-    // calculate start index
-    int start = my_rank * chunk;
-
+    // remainder is now handelled by root
 
     // calculate local sum
-    int local_sum = vector_magnitude_squared(vector + start, local_size);
+    int local_sum = vector_magnitude_squared(local_vector, chunk);
 
     // create and initialise transmission variables
     int count = 1;
@@ -115,7 +114,7 @@ void client_task(int my_rank, int num_arg, int uni_size)
     MPI_Send(&local_sum, count, MPI_INT, dest, 0, MPI_COMM_WORLD);
 
     // free up memory
-    free(vector);
+    free(local_vector);
 }
 
 
