@@ -66,7 +66,7 @@ void root_task(int num_arg, int uni_size)
     int remainder_sum = vector_magnitude_squared(vector + (num_arg- remainder), remainder);
 
     // sum results
-    int total_sum = local_sum + remainder_sum;
+    local_sum = local_sum + remainder_sum;
 
     // create and initialise receive variables
     int recv_message = 0;
@@ -81,7 +81,7 @@ void root_task(int num_arg, int uni_size)
     // sum resulst
     int total_sum = 0;
     for (int rank = 0; rank < uni_size; rank++)
-        total_sum += all_sums[rank];
+        total_sum += all_results[rank];
     
     // print final result
     printf("Magnitude Squared: %d\n", total_sum);
