@@ -5,7 +5,7 @@
 // declares the functions that will be called within main
 // note how declaration lines are similar to the initial line
 // of a function definition, but with a semicolon at the end;
-void check_args(int argc, char **argv, int *points, int *cycles, int *samples, char **path, int *time_steps, double *step_size)
+void check_args(int argc, char **argv, int *points, int *cycles, int *samples, char **path, int *time_steps, double *step_size);
 void initialise_vector(double vector[], int size, double initial);
 void print_vector(double vector[], int size);
 int sum_vector(int vector[], int size);
@@ -24,7 +24,6 @@ int main(int argc, char **argv)
 	check_args(argc, argv, &points, &cycles, &samples, &path, &time_steps, &step_size);
 
 	
-
 	// creates a vector for the time stamps in the data
 	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
 	initialise_vector(time_stamps, time_steps, 0.0);
