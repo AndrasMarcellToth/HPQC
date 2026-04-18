@@ -3,8 +3,8 @@
 #include <time.h>
 #include <mpi.h>
 
-void root_task(int my_rank, int uni_size);
-void client_task(int my_rank, int uni_size);
+void root_task(int my_rank, int num_pings);
+void client_task(int my_rank, int num_pings);
 void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size);
 void check_ranks(int uni_size);
 double to_second_float(struct timespec in_time);
@@ -24,6 +24,8 @@ int main(int argc, char **argv)
 	// check if correct number of ranks
 	check_ranks(uni_size);
 
+    int num_pings;
+
     if (argc == 2)
     {
         num_pings = atoi(argv[1]);
@@ -38,7 +40,7 @@ int main(int argc, char **argv)
     if (0 == my_rank)
         root_task(my_rank, num_pings);
     else
-        client_task(my_rank);
+        client_task(my_rank, num_pings);
 
 	// finalise MPI
 	ierror = MPI_Finalize();
@@ -64,6 +66,7 @@ void root_task(int my_rank, int num_pings)
 
     while(current_pings < num_pings) {
 
+        printf("Root with current count %d out of %d", current_pings, num_pings);
         // send the currrent ping count
         MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
 
@@ -78,10 +81,10 @@ void root_task(int my_rank, int num_pings)
 	timespec_get(&end_time, TIME_UTC);
 	// calculate runtime
 	time_diff = calculate_runtime(start_time, end_time);
-	runtime = to_second_float(time_diff);
+	elapsed_time = to_second_float(time_diff);
 
 	// prints the message from the sender
-	printf("Rank %d took %lf seconds to send\n", my_rank, runtime);
+	printf("Took %lf seconds for %d ping-pongs\n", elapsed_time, num_pings);
 
 }
 
@@ -92,19 +95,17 @@ void client_task(int my_rank, int num_pings)
     tag = source = count, current_pings = 0;
     dest, count = 1;
     MPI_Status status;
+    // recive ping count from client
+    MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
 
+    printf("Client with current count %d out of %d", current_pings, num_pings);
 
-    while(current_pings < num_pings) {
+    // increment ping count
+    current_pings++;
 
-        // recive ping count from client
-        MPI_Recv(&current_pings, count, MPI_INT, source, tag, MPI_COMM_WORLD, &status);
+    // send the currrent ping count
+    MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
 
-        // increment ping count
-        current_pings++;
-
-        // send the currrent ping count
-        MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
-    }
 
 
 }
