@@ -5,7 +5,7 @@
 // declares the functions that will be called within main
 // note how declaration lines are similar to the initial line
 // of a function definition, but with a semicolon at the end;
-int check_args(int argc, char **argv);
+void check_args(int argc, char **argv, int *points, int *cycles, int *samples, char **path, int *time_steps, double *step_size)
 void initialise_vector(double vector[], int size, double initial);
 void print_vector(double vector[], int size);
 int sum_vector(int vector[], int size);
@@ -17,13 +17,13 @@ void print_header(FILE** p_out_file, int points);
 int main(int argc, char **argv)
 {
 	// declare and initialise the numerical argument variable
-	int points = check_args(argc, argv);
+	int points, cycles, samples, time_steps;
+	char *path;
+	double step_size;
+	// chack umber of arguments and calculate parameters
+	check_args(argc, argv, &points, &cycles, &samples, &path, &time_steps, &step_size);
 
-	// creates variables for the vibration
-	int cycles = 5; // number of cycles to show
-	int samples = 25; // sampling rate in samples per cycle
-	int time_steps = cycles * samples + 1; // total timesteps
-	double step_size = 1.0/samples;
+	
 
 	// creates a vector for the time stamps in the data
 	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
@@ -161,27 +161,31 @@ void print_vector(double vector[], int size)
 	}
 }
 
-// defines a function that checks your arguments to make sure they'll do what you need
-int check_args(int argc, char **argv)
+// checks number of input variable and calculautes all parameters.
+void check_args(int argc, char **argv, int *points, int *cycles, int *samples, char **path, int *time_steps, double *step_size)
 {
-	// declare and initialise the numerical argument
-	int num_arg = 0;
 
 	// check the number of arguments
-	if (argc == 2) // program name and numerical argument
+	if (argc == 5) // program name and numerical argument
 	{
 		// declare and initialise the numerical argument
-		num_arg = atoi(argv[1]);
+		*points = atoi(argv[1]);
+		*cycles = atoi(argv[2]);
+		*samples = atoi(argv[3]);
+		*path = argv[4];
+
+		// creates variables for the vibration
+		*time_steps = *cycles * *samples + 1;
+		*step_size = 1.0 / *samples;
 	}
 	else // the number of arguments is incorrect
 	{
 		// raise an error
-		fprintf(stderr, "ERROR: You did not provide a numerical argument!\n");
-		fprintf(stderr, "Correct use: %s [NUMBER]\n", argv[0]);
+		fprintf(stderr, "ERROR: wrong number of parameters!\n");
+		fprintf(stderr, "Correct use: %s [points] [cycles] [samples] [path]\n", argv[0]);
 
 		// and exit COMPLETELY
 		exit (-1);
 	}
-	return num_arg;
 }
 
