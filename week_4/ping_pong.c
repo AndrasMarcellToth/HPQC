@@ -66,7 +66,9 @@ void root_task(int my_rank, int num_pings)
 
     while(current_pings < num_pings) {
 
-        printf("Root with current count %d out of %d\n", current_pings, num_pings);
+        // print for debug
+        // printf("Root with current count %d out of %d\n", current_pings, num_pings);
+        
         // send the currrent ping count
         MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
 
@@ -101,7 +103,8 @@ void client_task(int my_rank, int num_pings)
         // increment ping count
         current_pings++;
 
-        printf("Client with current count %d out of %d\n", current_pings, num_pings);
+        // print for debug
+        // printf("Client with current count %d out of %d\n", current_pings, num_pings);
 
         // send the currrent ping count
         MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
