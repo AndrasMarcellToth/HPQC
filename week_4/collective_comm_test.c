@@ -104,7 +104,7 @@ void client_task(int my_rank, int num_arg, int uni_size)
 
 
     // calculate local sum
-    int local_sum = vector_magnitude_squared(local_vector, local_size);
+    int local_sum = vector_magnitude_squared(vector + start, local_size);
 
     // create and initialise transmission variables
     int count = 1;
