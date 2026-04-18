@@ -73,15 +73,10 @@ void root_task(int num_arg, int uni_size)
     int count = 1;
     MPI_Status status;
 
-    // allocate memory to all results
-    int *all_results = malloc(uni_size * sizeof(int));
-    // gather from all ranks
-    MPI_Gather(&local_sum, count, MPI_INT, all_results, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-    // sum resulst
+    // crate sun variable
     int total_sum = 0;
-    for (int rank = 0; rank < uni_size; rank++)
-        total_sum += all_results[rank];
+    // get results from all ranks
+    MPI_Reduce(&local_sum, &total_sum, count, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     
     // print final result
     printf("Magnitude Squared: %d\n", total_sum);
@@ -114,7 +109,7 @@ void client_task(int my_rank, int num_arg, int uni_size)
     MPI_Status status;
 
     // send result to root
-    MPI_Gather(&local_sum, count, MPI_INT, NULL, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&local_sum, NULL, count, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
     // free up memory
     free(local_vector);
