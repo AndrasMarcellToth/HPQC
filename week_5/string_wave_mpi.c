@@ -77,7 +77,8 @@ void root_task(int my_rank, int num_pings)
 		update_positions_root(local_positions, chunk, time_stamps[i]);
 		// add new postiotns to array of some kind
 
-		// send final position to next rank
+		// send last element to next rank
+		MPI_Send(&local_positions[chunk-1], 1, MPI_DOUBLE, my_rank+1, 0, MPI_COMM_WORLD);
 
 	}
 
@@ -101,10 +102,10 @@ void client_task(int my_rank, int num_pings)
     int remainder = num_arg % uni_size;
 
 	// allocate memory for local vector chunk
-    int *local_positions = malloc(chunk * sizeof(int));
+    double *local_positions = malloc(chunk * sizeof(double));
 
     // receive scattered chunks
-    MPI_Scatter(NULL, chunk, MPI_INT, local_positions, chunk, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(NULL, chunk, MPI_DOUBLE, local_positions, chunk, MPI_INT, 0, MPI_COMM_WORLD);
 
 	// creates a vector for the time stamps in the data
 	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
@@ -119,15 +120,19 @@ void client_task(int my_rank, int num_pings)
 	{
 		
 		// recive strating position from previous rank
-		MPI_Recv(&boundary, 1, MPI_DOUBLE, my_rank-1, 0, MPI_COMM_WORLD);
+		MPI_Recv(&boundary, 1, MPI_DOUBLE, my_rank-1, 0, MPI_COMM_WORLD, &status);
 
 		// updates the position using a function
 		// need to change driver function
 		update_positions_client(local_positions, chunk, boundary);
 		// add new postiotns to array of some kind
 
-		// send last element to next rank
-		MPI_Send(local_positions[-1], 1, MPI_DOUBLE, my_rank+1, 0, MPI_COMM_WORLD);
+		// check if last rank
+		if (my_rank < uni_size - 1) {
+			// send last element to next rank
+			MPI_Send(&local_positions[chunk-1], 1, MPI_DOUBLE, my_rank+1, 0, MPI_COMM_WORLD);
+		}
+		
 
 	}
 
