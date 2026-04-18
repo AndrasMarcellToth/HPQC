@@ -7,6 +7,7 @@ void root_task(int my_rank, int num_pings);
 void client_task(int my_rank, int num_pings);
 void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size);
 void check_ranks(int uni_size);
+int check_args(int argc, char **argv);
 double to_second_float(struct timespec in_time);
 struct timespec calculate_runtime(struct timespec start_time, struct timespec end_time);
 
@@ -23,20 +24,9 @@ int main(int argc, char **argv)
 	initialise_mpi(&argc, &argv, &my_rank, &uni_size);
 	// check if correct number of ranks
 	check_ranks(uni_size);
-
-    int num_pings;
-
-    if (argc == 2)
-    {
-        num_pings = atoi(argv[1]);
-    }
-    else
-    {
-        fprintf(stderr, "Incorrect arguments. Usage: pingpong [NUM_PINGS]\ne.g.\n pingpong 100\n");
-        MPI_Finalize();
-        exit(-1);
-    }
-
+    // check if correct number of arguments and assigne first argument to num_pings
+    int num_pings = check_args(argc, argv);
+ 
     if (0 == my_rank)
         root_task(my_rank, num_pings);
     else
@@ -68,7 +58,7 @@ void root_task(int my_rank, int num_pings)
 
         // print for debug
         // printf("Root with current count %d out of %d\n", current_pings, num_pings);
-        
+
         // send the currrent ping count
         MPI_Send(&current_pings, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
 
@@ -111,6 +101,7 @@ void client_task(int my_rank, int num_pings)
     }
 }
 
+
 void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size)
 {
     int ierror = 0;
@@ -118,6 +109,7 @@ void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size)
     ierror = MPI_Comm_rank(MPI_COMM_WORLD, my_rank);
     ierror = MPI_Comm_size(MPI_COMM_WORLD, uni_size);
 }
+
 
 void check_ranks(int uni_size)
 {
@@ -128,6 +120,23 @@ void check_ranks(int uni_size)
         exit(1);
     }
 }
+
+
+int check_args(int argc, char **argv)
+{
+    if (argc == 2)
+    {
+        return atoi(argv[1]);
+    }
+    else
+    {
+        printf("Incorrect arguments. Ping-pong required exactly 1 integer input. E.g., mpiru -np 2 ~/bin/ping_pong 100\n");
+        MPI_Finalize();
+        exit(-1);
+    }
+
+}
+
 
 double to_second_float(struct timespec in_time)
 {
@@ -146,6 +155,7 @@ double to_second_float(struct timespec in_time)
 	// returns the time as a double
 	return out_time;
 }
+
 
 struct timespec calculate_runtime(struct timespec start_time, struct timespec end_time)
 {
