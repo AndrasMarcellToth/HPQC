@@ -149,14 +149,22 @@ The small misalignment seen in the GIF generated from the first implementation w
 
 ![mpi_2](figs/mpi_2.gif)
 
-#### Further Improvements
+#### Remainder Handling
 
 Handling the remainder is more complex in this programme than it was in the vector addition one. In the vector addition, the order did not matter. Therefore, the remainder from the end could be added to the first chunk, handled by root, with no issues. In the string simulation however, order is critical.
 
-One potential solution could be removing the remainder form the front of the vector, and adding it to the root chuck from the beginning.
+One potential solution could be removing the remainder form the front of the vector, and adding it to the root chuck from the beginning. An attempt was made at implementing this (see commit history); however, this caused further bugs in gathering and combining the data, and the changes were reverted.
 
-```
+Another possible solution would be to dedicate the last rank to only handle the remainder. However, this would also case difficulties in gathering the data in the end.
 
+## Further Improvements, True Parallelising, and Part 3
 
+I could not come up with a way to easily solve the reminder problem, or perhaps more importantly, to make the simulation truly parallel. I also left the assignment a bit too late to have time to implement any further physics concepts for part 3. 
 
-```
+On a very high level, calculating the position based on both neighbours and allowing the calculation to run back and forth in each chunk could potentially allow each rank to make their calculations independently after an initial 'starter' wave propagates thought the system and gives a starting point. 
+
+Or, perhaps, by introducing a force though a spring constant, each point could be treated as an independent oscillator so that the position of the points can be calculated independently of its neighbours after some initial momentum is given by a 'starter' wave. 
+
+These changes could allow the system to be truly parallel, with only the 'starter' wave being serial.
+
+I did not have time to try and implement any of these ideas though.
