@@ -9,7 +9,7 @@ import random
 from pathlib import Path
 import sys
 
-def generate_path(home_folder = str(Path.home()), subfolder = '/data/', basename = 'output', extension = 'txt'):
+def generate_path(home_folder = str(Path.home()), basename = 'output', extension = 'txt'):
     """This function creates the path to store the data. Note that the data is not 
     stored in the directory the code is executed in. This prevents git repos 
     from becoming cluttered with data that should be separate.
@@ -25,7 +25,7 @@ def generate_path(home_folder = str(Path.home()), subfolder = '/data/', basename
             Defaults to txt
     """
     # uses the method Path.home() to find the home directory in any OS
-    output_folder = home_folder + subfolder  # appends a subdirectory within it.
+    output_folder = home_folder # appends a subdirectory within it.
     filename = basename + '.' + extension  # defines the filename the output is to be saved in
     output_path = output_folder + filename  # creates the output path
     return output_path
@@ -333,7 +333,7 @@ def main():
                                   fargs=(data, rope)) # arguments to the animate function
 
     # saves the animation to disk
-    filename = generate_path(basename = 'animate_string_file', extension = 'gif')
+    filename = generate_path(home_folder=sys.argv[2], basename = 'animate_string_file', extension = 'gif')
     ani.save(filename=filename, writer="pillow", fps=fps)
 
 
