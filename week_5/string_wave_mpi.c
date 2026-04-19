@@ -89,6 +89,8 @@ void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps,
 	for (int i = 1; i < time_steps; i++)
 	{	
 
+		// send last element to next rank
+		MPI_Send(&local_positions[chunk-1], 1, MPI_DOUBLE, my_rank+1, 0, MPI_COMM_WORLD);
 
 		// updates the position using a function
 		update_positions_root(local_positions, chunk, time_stamps[i]);
@@ -99,8 +101,6 @@ void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps,
 			all_local_data[i * chunk + j] = local_positions[j];
 		}
 
-		// send last element to next rank
-		MPI_Send(&local_positions[chunk-1], 1, MPI_DOUBLE, my_rank+1, 0, MPI_COMM_WORLD);
 
 	}
 
