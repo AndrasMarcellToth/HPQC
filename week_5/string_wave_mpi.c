@@ -21,7 +21,7 @@ void write_to_file(char *path, double *all_data, int time_steps, int points, int
 void initialise_mpi(int *argc, char ***argv, int *my_rank, int *uni_size);
 
 // added separate root and client tasks 
-void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps, double step_size, char *path);
+void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps, double step_size, char *path, int remainder);
 void client_task(int my_rank, int uni_size, int chunk, int time_steps, double step_size);
 
 
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     int remainder = points % uni_size;
 
 	if (0 == my_rank)
-    	root_task(my_rank, uni_size, points, chunk, time_steps, step_size, path);
+    	root_task(my_rank, uni_size, points, chunk, time_steps, step_size, path, remainder);
 	else
     	client_task(my_rank, uni_size, chunk, time_steps, step_size);
 
@@ -58,20 +58,28 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps, double step_size, char *path)
+void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps, double step_size, char *path, int remainder)
 {	
 
 
 	// creates a vector variable for the current positions
 	double* positions = (double*) malloc(points * sizeof(double));
+
 	// and initialises every element to zero
-	initialise_vector(positions, points, 0.0);
+	// initialise_vector(positions, points, 0.0);
+
+	// to handle remainder, initialize exact size (chunk * uni_size), than add remainder to the sart of the root chunk
+	initialise_vector(positions, chunk * uni_size, 0.0);
+
 
 	// allocate memory for local vector chunk
-    double *local_positions = malloc(chunk * sizeof(double));
+    double *local_positions = malloc((chunk + remainder) * sizeof(double));
+	initialise_vector(local_positions, chunk + remainder, 0.0);
 
     // scatter to all processes
-    MPI_Scatter(positions, chunk, MPI_DOUBLE, local_positions, chunk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Scatter(positions, chunk, MPI_DOUBLE, NULL, chunk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+
 
 	// creates a vector for the time stamps in the data
 	double* time_stamps = (double*) malloc(time_steps * sizeof(double));
@@ -79,7 +87,7 @@ void root_task(int my_rank, int uni_size, int points, int chunk, int time_steps,
 	generate_timestamps(time_stamps, time_steps, step_size);
 
 	// allocate memory for all the local data
-	double *all_local_data = malloc(time_steps * chunk * sizeof(double));
+	double *all_local_data = malloc((time_steps * chunk + remainder) * sizeof(double));
 	// add the current position of the points to the full local data set
 		for (int j = 0; j < chunk; j++) {
 			all_local_data[j] = local_positions[j];
