@@ -38,7 +38,11 @@ e.g.
 ~/bin/string_wave_custom 50 10 5 ~/data/temp/test_outpu.csv
 ```
 
-A copy of the python file animate_line_file.py was also made, animate_line_custom.py to make the modification.
+A copy of the python file animate_line_file.py was also made, animate_line_custom.py to make the modification. A very basic change was made to have the programme take a second argument for the output file directory. This was done by passing sys.argv[2] directly as the home_folder to generate() path, and removing the subfolder entirely. The programme now outputs the final GIF directly to the path given as the second argument. 
+
+This is very primitive way of implementing this feature, a has no error checking or default value, and should be improved. Additionally, parameters like number of frames and fps are still hard coded.
+
+(note form later, I ran out of time before I could make any further improvements.)
 
 ## Part 2: Parallelising
 
