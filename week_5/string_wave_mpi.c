@@ -160,7 +160,12 @@ void client_task(int my_rank, int uni_size, int chunk, int time_steps, double st
 
 	// iterates through each time step in the collection
 	for (int i = 1; i < time_steps; i++)
-	{
+	{	
+		// check if last rank
+		if (my_rank < uni_size - 1) {
+			// send last element to next rank
+			MPI_Send(&local_positions[chunk-1], 1, MPI_DOUBLE, my_rank+1, 0, MPI_COMM_WORLD);
+		}
    			
 		// recive strating position from previous rank
 		MPI_Recv(&boundary, 1, MPI_DOUBLE, my_rank-1, 0, MPI_COMM_WORLD, &status);
@@ -172,12 +177,6 @@ void client_task(int my_rank, int uni_size, int chunk, int time_steps, double st
 		// add the current position of the points to the full local data set
 		for (int j = 0; j < chunk; j++) {
 			all_local_data[i * chunk + j] = local_positions[j];
-		}
-
-		// check if last rank
-		if (my_rank < uni_size - 1) {
-			// send last element to next rank
-			MPI_Send(&local_positions[chunk-1], 1, MPI_DOUBLE, my_rank+1, 0, MPI_COMM_WORLD);
 		}
 		
 	}
